@@ -20,3 +20,4 @@ players_draft_imc_year = players_draft_josema.groupby('season').agg({'player_hei
 
 st.markdown('#TEST MARKDOWN')
 
+st.dataframe(players_draft_imc_year)
