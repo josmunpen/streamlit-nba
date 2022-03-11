@@ -4,6 +4,7 @@ import pandas as pd
 import time
 from matplotlib import pyplot as plt
 import seaborn as sns
+import joblib
 
 # st.set_page_config(layout="wide")
 
@@ -24,7 +25,7 @@ st.dataframe(players_draft_imc_year)
 
 
 ## Altura/Peso por temporada
-st.header("Análisis altura/peso a lo largo de las temporadas")
+st.header("Análisis altura/peso a lo largo de las temporadas 📈")
 
 seasons = players_draft_josema.season.unique()
 
@@ -33,11 +34,9 @@ fig, ax = plt.subplots()
 season_selected = st.select_slider("¿Qué temporada desea analizar?", options=seasons, key='1')
 players_draft_season = players_draft_josema[players_draft_josema.season == season_selected]
 
-with st.expander("Añadir temporada"):
-    season_selected2 = st.select_slider("¿Con qué temporada desea comparar?", options=seasons, key='2')
-    players_draft_season2 = players_draft_josema[players_draft_josema.season == season_selected2]
 
-st.subheader('Estadísticas temporada 1')
+
+st.subheader('Estadísticas temporada 1: {}'.format(season_selected))
 col1, col2, col3 = st.columns(3)
 media_season_altura = np.mean(players_draft_season.player_height)
 media_season_peso = np.mean(players_draft_season.player_weight)
@@ -46,25 +45,66 @@ col1.metric("Total jugadores", total_season_jugadores)
 col2.metric("Media altura", np.round(media_season_altura,2))
 col3.metric("Media peso", np.round(media_season_peso,2))
 
-st.subheader('Estadísticas temporada 2')
-col1, col2, col3 = st.columns(3)
-media_season_altura2 = np.mean(players_draft_season2.player_height)
-media_season_peso2 = np.mean(players_draft_season2.player_weight)
-total_season_jugadores2 = len(players_draft_season2)
-col1.metric("Total jugadores", total_season_jugadores2)
-col2.metric("Media altura", np.round(media_season_altura2,2))
-col3.metric("Media peso", np.round(media_season_peso2,2))
+with st.expander("Añadir temporada"):
+    season_selected2 = st.select_slider("¿Con qué temporada desea comparar?", options=seasons, key='2')
+    players_draft_season2 = players_draft_josema[players_draft_josema.season == season_selected2]
+    st.subheader('Estadísticas temporada 2: {}'.format(season_selected2))
+    col1, col2, col3 = st.columns(3)
+    media_season_altura2 = np.mean(players_draft_season2.player_height)
+    media_season_peso2 = np.mean(players_draft_season2.player_weight)
+    total_season_jugadores2 = len(players_draft_season2)
+    col1.metric("Total jugadores", total_season_jugadores2)
+    col2.metric("Media altura", np.round(media_season_altura2,2))
+    col3.metric("Media peso", np.round(media_season_peso2,2))
 
 
 ax = sns.scatterplot(data=players_draft_season, x='player_weight', y='player_height')
 ax2 = sns.scatterplot(data=players_draft_season2, x='player_weight', y='player_height')
 st.pyplot(fig)
 
-fig34, ax34 = plt.subplots()
-two_seasons = players_draft_josema[(players_draft_josema.season == season_selected) | (players_draft_josema.season == season_selected2) ]
-ax34 = sns.boxplot(data=two_seasons, x='season', y='player_height')
-st.pyplot(fig34)
+with st.expander("Distribución de altura y peso"):
+    fig34, ax34 = plt.subplots()
+    two_seasons = players_draft_josema[(players_draft_josema.season == season_selected) | (players_draft_josema.season == season_selected2) ]
+    ax34 = sns.boxplot(data=two_seasons, x='season', y='player_height')
+    st.pyplot(fig34)
 
-fig56, ax56 = plt.subplots()
-ax56 = sns.boxplot(data=two_seasons, x='season', y='player_weight')
-st.pyplot(fig56)
+    fig56, ax56 = plt.subplots()
+    ax56 = sns.boxplot(data=two_seasons, x='season', y='player_weight')
+    st.pyplot(fig56)
+
+st.write('_______________________________________________')
+## Predicción
+st.header('Predicción de puntos de un jugador en la siguiente temporada 🔮')
+
+st.write('Tras realizar una comparativa mediante validación cruzada con 14 modelos se ha seleccionado el **regresor de bosques aleatorios** (Random Forest Regressor) con una configuración de 100 estimadores como **mejor modelo**. ')
+
+res_pts = pd.read_csv("./data/res_pts.csv")
+res_pts.drop(columns=['Unnamed: 0'], inplace=True)
+
+with st.expander("Comparativa de modelos"):
+    st.dataframe(res_pts)
+    
+st.subheader('Métricas del modelo seleccionado')
+col1, col2, col3 = st.columns(3)
+col1.metric("MAE", '1.57')
+col2.metric("RMSE", '2.21')
+col3.metric("Tiempo empleado en entrenamiento", '5.51s')
+
+regressor = joblib.load('./data/rf_joblib.pkl')
+
+def predict_pts(age, height, weight, draft_round, draft_number, reb, ast):
+    prediction=regressor.predict([[age, height, weight, draft_round, draft_number, reb, ast]]) #predictions using our model
+    return prediction 
+
+height = st.text_input("Altura (m)", placeholder=2.06)
+weight = st.text_input("Peso (kg)", placeholder=102.06)
+age = st.text_input("Edad", placeholder=33) 
+draft_round = st.text_input("Ronda de draft (1-7)", placeholder=1) 
+draft_number = st.text_input("Posición de draft (1-41)", placeholder=23) 
+reb = st.text_input("Media de rebotes", placeholder=7.9) 
+ast = st.text_input("Media de asistencias", placeholder=0.8) 
+result=""
+
+if st.button("Predicción"):
+    result=predict_pts(age, height, weight, draft_round, draft_number, reb, ast) 
+    st.success("El jugador realizará una media de {} puntos por partido la siguiente temporada.".format(result))
