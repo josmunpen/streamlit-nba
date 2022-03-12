@@ -21,6 +21,8 @@ players_draft_imc_year = players_draft_josema.groupby('season').agg({'player_hei
 
 st.title('Análisis de datos deportivos sobre jugadores de la NBA 🏀')
 
+st.write('A continuación se muestra el DataFrame que recoge las estadísticas principales de los jugadores drafteados cada temporada.')
+
 st.dataframe(players_draft_imc_year)
 
 
@@ -60,17 +62,43 @@ with st.expander("Añadir temporada"):
 
 ax = sns.scatterplot(data=players_draft_season, x='player_weight', y='player_height')
 ax2 = sns.scatterplot(data=players_draft_season2, x='player_weight', y='player_height')
+ax.set(xlabel="Altura (cm)", ylabel = "Peso (kg)")
 st.pyplot(fig)
 
 with st.expander("Distribución de altura y peso"):
     fig34, ax34 = plt.subplots()
     two_seasons = players_draft_josema[(players_draft_josema.season == season_selected) | (players_draft_josema.season == season_selected2) ]
     ax34 = sns.boxplot(data=two_seasons, x='season', y='player_height')
+    ax34.set(ylabel="Altura", xlabel='Temporada')
     st.pyplot(fig34)
 
     fig56, ax56 = plt.subplots()
     ax56 = sns.boxplot(data=two_seasons, x='season', y='player_weight')
+    ax56.set(ylabel="Peso", xlabel='Temporada')
     st.pyplot(fig56)
+
+
+players_draft_josema['player_imc'] = players_draft_josema.apply(lambda row: row.player_weight / ((0.01 * row.player_height) ** 2), axis = 1)
+with st.expander('Análisis media móvil por temporada'):
+    players_draft_imc_year = players_draft_josema.groupby('season').agg({'player_height':'mean', 'player_weight':'mean', 'player_imc':'mean', 'pts': 'mean'})
+
+
+    fig79, ax79 = plt.subplots()
+    ax79 = sns.lineplot(x=players_draft_imc_year.index, y=players_draft_imc_year.player_height.rolling(6).mean()).set(xlabel='Temporada', ylabel="Altura (cm)")
+    plt.xticks(rotation=45,horizontalalignment="right")
+    st.pyplot(fig79)
+
+
+    fig8 = plt.figure()
+    sns.lineplot(x=players_draft_imc_year.index, y=players_draft_imc_year.player_weight.rolling(6).mean()).set(xlabel='Temporada', ylabel="Peso (kg)")
+    plt.xticks(rotation=45,horizontalalignment="right")
+    st.pyplot(fig8)
+
+    fig9 = plt.figure()
+    sns.lineplot(x=players_draft_imc_year.index, y=players_draft_imc_year.player_imc.rolling(6).mean()).set(xlabel='Temporada', ylabel="IMC")
+    plt.xticks(rotation=45,horizontalalignment="right")
+    st.pyplot(fig79)
+
 
 st.write('_______________________________________________')
 ## Predicción
