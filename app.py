@@ -97,7 +97,7 @@ with st.expander('Análisis media móvil por temporada'):
     fig9 = plt.figure()
     sns.lineplot(x=players_draft_imc_year.index, y=players_draft_imc_year.player_imc.rolling(6).mean()).set(xlabel='Temporada', ylabel="IMC")
     plt.xticks(rotation=45,horizontalalignment="right")
-    st.pyplot(fig79)
+    st.pyplot(fig9)
 
 
 st.write('_______________________________________________')
